@@ -19,6 +19,7 @@ class ShotHound(object):
         self.connected = False
         self.use_encryption = use_encryption
         self.logical_paths = []
+        self.more_2_hops_paths = []
         self.practical_paths = []
         self.wthreads = wthreads
 
@@ -67,6 +68,9 @@ class ShotHound(object):
     def get_logical_paths(self):
         return self.logical_paths
 
+    def get_more_2_hops_paths(self):
+        return self.more_2_hops_paths
+
     def get_computers_from_path(self,path):
         return [x.replace('Computer:','').replace('@','.') for x in path if 'Computer:' in x]
 
@@ -97,6 +101,7 @@ class ShotHound(object):
                 total_computers = len(comp_in_path)
                 comp_in_path.reverse()
                 if total_computers > 1:
+                    self.more_2_hops_paths.append(path)
                     for dst_ix in range(total_computers):
                         if dst_ix + 1 < total_computers:
                             for src_ix in range(dst_ix + 1, total_computers):
@@ -105,10 +110,8 @@ class ShotHound(object):
                                     valid_hops += 1
                                     break
                     if valid_hops >= total_computers - 1:
+                        logger.info(f'Practical Path:\n{self.path_to_str(path)}\n')
                         practical_paths.append(path)
-                else:
-                    logger.info(f'Practical Path: {self.path_to_str(path)}')
-                    practical_paths.append(path)
 
         return practical_paths
 
@@ -217,12 +220,12 @@ if __name__ == '__main__':
         if sh.connect():
             if sh.find_logical_paths(srcname=args.source,trgtname=args.target):
                 validated = sh.validate_paths()
-                total = len(sh.get_logical_paths())
+                total = len(sh.get_more_2_hops_paths())
                 percent = 0
                 if total > 0:
                     percent = round((validated / total) * 100)
                 logger.info(f'---------------------------------------')
-                logger.info(f'ShotHound found {validated} practical paths, which is {percent}% of total paths')
+                logger.info(f'ShotHound found {validated} practical paths, which is {percent}% of {total} paths with at leasts 2 hosts ')
 
     except KeyboardInterrupt:
         logger.info("Interrupted!")
